@@ -1,6 +1,7 @@
 import unittest, os
 from src.App import App
 
+
 class TestWriteResult(unittest.TestCase):
 
     def test_write_result(self):
@@ -13,6 +14,7 @@ class TestWriteResult(unittest.TestCase):
             content = file.read()
         expected_content = "<gpx><wpt lat=\"16.6\" lon=\"49.2\"></wpt><wpt lat=\"16.57\" lon=\"49.23\"></wpt><wpt lat=\"16.58\" lon=\"49.22\"></wpt><wpt lat=\"16.59\" lon=\"49.21\"></wpt></gpx>"
         self.assertEqual(content, expected_content)
+
 
 if __name__ == '__main__':
     unittest.main()

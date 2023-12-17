@@ -1,6 +1,7 @@
 import unittest
 from src.App import App
 
+
 class TestPrepareResultingPoints(unittest.TestCase):
 
     def test_prepare_resulting_points(self):
@@ -17,6 +18,7 @@ class TestPrepareResultingPoints(unittest.TestCase):
         self.assertEqual(result_points[1], [49.23, 16.57])
         self.assertEqual(result_points[2], [49.22, 16.58])
         self.assertEqual(result_points[3], [49.21, 16.59])
+
 
 if __name__ == '__main__':
     unittest.main()

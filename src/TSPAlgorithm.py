@@ -1,5 +1,6 @@
 from abc import ABC, abstractmethod
 
+
 class TSPAlgorithm(ABC):
     @abstractmethod
     def create_graph(self, points):

@@ -2,18 +2,21 @@ import itertools, os, time
 from src.TSPSolver import TSPSolver
 from src.TSPAlgorithm import TSPAlgorithm
 
+from typing import Dict
+
+
 class TSPMeta(type(TSPSolver), type(TSPAlgorithm)):
     pass
+
 
 class BruteForceTSPSolver(TSPSolver, TSPAlgorithm, metaclass=TSPMeta):
 
     def create_graph(self, points) -> None:
         return super().create_graph(points)
 
-    def solve(self, tsp_solver) -> dict:
+    def solve(self, tsp_solver: TSPSolver) -> Dict:
         """
-        brute_force_tsp ... Function solves the traveling salesman problem for
-            given weighted graph using the brute force method.
+        Solves the traveling salesman problem for given weighted graph using the brute force method.
         """
         # Generate all possible permutations of node indices
         nodes_count = tsp_solver.graph.number_of_nodes()
@@ -24,7 +27,8 @@ class BruteForceTSPSolver(TSPSolver, TSPAlgorithm, metaclass=TSPMeta):
         min_weight = float('inf')
         min_permutation = None
         for permutation in all_permutations:
-            weight = sum(tsp_solver.graph[permutation[i]][permutation[(i+1) % nodes_count]]['weight'] for i in range(nodes_count))
+            weight = sum(tsp_solver.graph[permutation[i]][permutation[(i + 1) % nodes_count]]['weight'] for i in
+                         range(nodes_count))
             if weight < min_weight:
                 min_weight = weight
                 min_permutation = permutation

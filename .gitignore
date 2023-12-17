@@ -1,8 +1,9 @@
 .env
-pathfinder_venv
+venv
 __pycache__
 input/*
 !input/.gitkeep
 output/*
 !output/.gitkeep
 .vscode
+.idea
