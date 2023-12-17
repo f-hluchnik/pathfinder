@@ -1,16 +1,27 @@
-import xml.etree.ElementTree as ET
+import errno
+import os
+import re
+import xml.etree.ElementTree as ElementTree
 from os.path import exists as file_exists
-import os, re, errno
+from typing import List, Tuple
+
 
 class App:
-    def load_gpx(self, file_name):
+
+    # noinspection PyMethodMayBeStatic
+    def load_gpx(self, file_name: str) -> List[Tuple[str, str]]:
         """
-        load_xml ... Function loads the input file and parses the xml. It returns
-        a list of points (a list of tuples).
+        Loads the input file and parses the xml. It returns a list of points (a list of tuples).
+
+        Args:
+            file_name: name of the file containing the GPS coordinates
+
+        Returns:
+            list of the locations from the GPX file
         """
         locations = list()
         if file_exists(file_name):
-            tree = ET.parse(file_name)
+            tree = ElementTree.parse(file_name)
         else:
             raise FileNotFoundError(errno.ENOENT, os.strerror(errno.ENOENT), file_name)
         root = tree.getroot()
@@ -18,9 +29,10 @@ class App:
             locations.append((child.attrib["lat"], child.attrib["lon"]))
         return locations
 
-    def prepare_resulting_points(self, computed_points, initial_points):
+    # noinspection PyMethodMayBeStatic
+    def prepare_resulting_points(self, computed_points, initial_points) -> List:
         """
-        prepare_resulting_points ... Function prepares a list of the resulting points.
+        Prepares a list of the resulting points.
         """
         result_points = list()
         for i in computed_points:
@@ -28,10 +40,10 @@ class App:
             result_points.append(point)
         return result_points
 
-    def write_result(self, res_gpx, resulting_points, output_dir = 'output/result.gpx'):
+    # noinspection PyMethodMayBeStatic
+    def write_result(self, res_gpx: str, resulting_points: List, output_dir: str = 'output/result.gpx') -> None:
         """
-        write_result ... Function writes the result in the output gpx file.
-        It appends the initial waypoints to the resulting gpx file.
+        Writes the result in the output gpx file. It appends the initial waypoints to the resulting gpx file.
         """
         res_gpx = re.sub(r'</gpx>$', '', res_gpx)
         for point in resulting_points[:-1]:
