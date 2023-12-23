@@ -1,8 +1,4 @@
-import errno
-import os
 import re
-import xml.etree.ElementTree as ElementTree
-from os.path import exists as file_exists
 from typing import List, Tuple
 import gpxpy
 

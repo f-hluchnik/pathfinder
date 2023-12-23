@@ -1,3 +1,7 @@
+from src.App import App
+from src.TSPSolver import TSPSolver
+from src.Method import Method
+
 import os
 import random
 from threading import *
@@ -8,27 +12,45 @@ from PyQt5.QtWidgets import *
 from dotenv import load_dotenv
 from matplotlib.backends.backend_qt5agg import FigureCanvasQTAgg as FigureCanvas
 from matplotlib.figure import Figure
-from typing import List, Dict
+from typing import Dict, Callable
+import qdarkstyle
 
 import logging
 from asyncio.log import logger
+
 logging.basicConfig(level=logging.INFO)
-from src.App import App
-from src.TSPSolver import TSPSolver
 
 
 class Window(QMainWindow):
+    _POINT_NAME_X_OFFSET = - 0.0001
+    _POINT_NAME_Y_OFFSET = - 0.0007
+    _WINDOW_WIDTH = 1000
+    _WINDOW_HEIGHT = 600
+    _DEFAULT_STARTING_POINT = 0
+    _FIGURE_FACE_COLOUR = (0, 0, 0, 0)
+    _PLOT_FACE_COLOUR = (0, 0, 0, 0.2)
+
     def __init__(self) -> None:
         super().__init__()
         self.stylesheet = None
+        self.gpx_label = QLabel()
+        self.method_label = QLabel()
+        self.method_brute_force = QRadioButton()
+        self.method_nearest_neighbour = QRadioButton()
+        self.dropdown_menu = QComboBox()
+        self.button_load_file = QRadioButton()
+        self.button_compute = QRadioButton()
+        self.figure = Figure()
+        self.canvas = FigureCanvas()
+        self.ax = None
         load_dotenv()
 
         self.setWindowTitle("Pathfinder")
-        self.setGeometry(100, 200, 1000, 600)
+        self.setGeometry(100, 200, self._WINDOW_WIDTH, self._WINDOW_HEIGHT)
         self.setWindowIcon(QIcon('media/icon.png'))
         self.load_stylesheet()
-        self.method = 'brute_force'
-        self.selected_starting_point = 0
+        self.method = Method.BRUTE_FORCE
+        self.selected_starting_point = self._DEFAULT_STARTING_POINT
         self.ui_components()
         self.tsp_solver = TSPSolver()
         self.input_points = None
@@ -53,7 +75,8 @@ class Window(QMainWindow):
         """
         with open('styles/styles.qss', 'r') as f:
             self.stylesheet = f.read()
-        self.setStyleSheet(self.stylesheet)
+
+        self.setStyleSheet(qdarkstyle.load_stylesheet(qt_api='pyqt5'))
 
     def ui_components(self) -> None:
         """
@@ -62,55 +85,104 @@ class Window(QMainWindow):
         This method initializes and configures various graphical user interface components,
         including labels, buttons, a dropdown menu, and a canvas for displaying graphs.
         """
-        title_label = QLabel(
-            "Begin with importing the gpx file.\nIf the program stops while creating the graph, don't panic.\nThe API has requests per minute limit, so we are just waiting 60 seconds to renew the limit.",
-            self)
-        title_label.setGeometry(10, 10, 600, 40)
+        self.create_gpx_label()
+        self.create_method_label()
+        self.create_radio_buttons()
+        self.create_toolbar()
+        self.create_dropdown_menu()
+        self.create_push_buttons()
+        self.create_figure()
+        self.create_layout()
 
+    def create_gpx_label(self) -> None:
         self.gpx_label = QLabel("", self)
         self.gpx_label.setGeometry(10, 30, 600, 40)
 
+    def create_method_label(self) -> None:
         self.method_label = QLabel(
-            "Choose the computing method. In case of the nearest neighbour method, you can choose also the starting point.",
+            "Choose the computing method."
+            "In case of the nearest neighbour method, you can choose also the starting point.",
             self)
         self.method_label.setGeometry(10, 50, 600, 40)
 
+    def create_radio_buttons(self) -> None:
+        self.method_brute_force = self.create_radio_button(
+            label=Method.BRUTE_FORCE.label(),
+            callback=self.set_method_to_brute_force,
+            checked=True
+        )
+        self.method_nearest_neighbour = self.create_radio_button(
+            label=Method.NEAREST_NEIGHBOUR.label(),
+            callback=self.set_method_to_nearest_neighbour,
+            checked=False
+        )
+
+    def create_radio_button(self, label: str, callback: Callable, checked: bool) -> QAbstractButton:
+        button = QRadioButton(label, self)
+        button.setChecked(checked)
+        button.clicked.connect(callback)
+        return button
+
+    def create_toolbar(self) -> None:
         toolbar = QButtonGroup(self)
-        self.method_brute_force = QRadioButton('brute force', self)
-        self.method_brute_force.setChecked(True)
-        self.method_brute_force.clicked.connect(self.set_method_to_brute_force)
-
-        self.method_nearest_neighbour = QRadioButton('nearest neighbour', self)
-        self.method_nearest_neighbour.setCheckable(True)
-        self.method_nearest_neighbour.clicked.connect(self.set_method_to_nearest_neighbour)
-
         toolbar.addButton(self.method_brute_force)
         toolbar.addButton(self.method_nearest_neighbour)
 
+    def create_dropdown_menu(self) -> None:
         self.dropdown_menu = QComboBox(self)
         self.dropdown_menu.setFixedWidth(80)
         self.dropdown_menu.addItem('random')
         self.dropdown_menu.setEnabled(False)
         self.dropdown_menu.currentIndexChanged.connect(self.selection_changed)
 
-        self.button_load_file = QPushButton("load gpx", self)
-        self.button_load_file.setGeometry(10, 70, 80, 40)
-        self.button_load_file.setStyleSheet(self.stylesheet)
-        self.button_load_file.setCursor(QCursor(Qt.PointingHandCursor))
-        self.button_load_file.clicked.connect(self.load_file)
+    def create_push_buttons(self) -> None:
+        self.button_load_file = self.create_push_button(
+            label="load gpx",
+            enabled=True,
+            geometry=QRect(10, 70, 80, 40),
+            cursor_type=Qt.PointingHandCursor,
+            callback=self.load_file
+        )
 
-        self.button_compute = QPushButton("compute", self)
-        self.button_compute.setEnabled(False)
-        self.button_compute.setGeometry(10, 150, 80, 40)
-        self.button_compute.setStyleSheet(self.stylesheet)
-        self.button_compute.setCursor(QCursor(Qt.PointingHandCursor))
-        self.button_compute.clicked.connect(self.compute_thread)
+        self.button_compute = self.create_push_button(
+            label="compute",
+            enabled=False,
+            geometry=QRect(10, 150, 80, 40),
+            cursor_type=Qt.PointingHandCursor,
+            callback=self.compute_thread
+        )
 
-        self.figure = Figure(figsize=(5, 4), dpi=100)
+    def create_push_button(
+            self,
+            label: str,
+            enabled: bool,
+            geometry: QRect,
+            cursor_type: Qt.CursorShape,
+            callback: Callable
+    ) -> QAbstractButton:
+        button = QPushButton(label, self)
+        button.setEnabled(enabled)
+        button.setGeometry(geometry)
+        self.button_load_file.setCursor(QCursor(cursor_type))
+        self.button_load_file.clicked.connect(callback)
+        return button
+
+    def create_figure(self) -> None:
+        self.figure = Figure(figsize=(5, 4), dpi=100, facecolor=self._FIGURE_FACE_COLOUR, edgecolor='white')
         self.canvas = FigureCanvas(self.figure)
         self.canvas.move(0, 0)
         self.ax = self.figure.add_subplot(111)
+        self.ax.tick_params(axis='x', colors='white')
+        self.ax.tick_params(axis='y', colors='white')
+        self.ax.set_facecolor(self._PLOT_FACE_COLOUR)
 
+    def create_layout(self) -> None:
+        title_label = QLabel(
+            "Begin with importing the gpx file.\n"
+            "If the program stops while creating the graph, don't panic.\n"
+            "The API has requests per minute limit, so we are just waiting 60 seconds to renew the limit.",
+            self)
+        title_label.setGeometry(10, 10, 600, 40)
         central_widget = QWidget()
         layout = QVBoxLayout(central_widget)
         layout.addWidget(title_label)
@@ -133,15 +205,16 @@ class Window(QMainWindow):
         """
         self.method_nearest_neighbour.setChecked(False)
         self.dropdown_menu.setEnabled(False)
-        self.method = 'brute_force'
+        self.method = Method.BRUTE_FORCE
 
     def set_method_to_nearest_neighbour(self) -> None:
         """
         Sets the method for computation to the nearest neighbor algorithm.
         """
         self.method_brute_force.setChecked(False)
-        self.dropdown_menu.setEnabled(True)
-        self.method = 'nearest_neighbour'
+        if self.dropdown_menu.count() > 1:
+            self.dropdown_menu.setEnabled(True)
+        self.method = Method.NEAREST_NEIGHBOUR
 
     def populate_dropdown_menu(self) -> None:
         """
@@ -154,6 +227,8 @@ class Window(QMainWindow):
         if len(self.input_points) > 0:
             for i in range(0, len(self.input_points)):
                 self.dropdown_menu.addItem('bod ' + str(i + 1))
+        if self.method == Method.NEAREST_NEIGHBOUR and self.dropdown_menu.count() > 1:
+            self.dropdown_menu.setEnabled(True)
 
     def selection_changed(self) -> None:
         """
@@ -174,7 +249,6 @@ class Window(QMainWindow):
             self.tsp_solver.graph.clear()
             self.input_points = self.app.load_gpx(file_name)
             self.populate_dropdown_menu()
-            # text = ",\n".join("(%s,%s)" % tup for tup in self.input_points)
             self.gpx_label.setText(f"You have loaded {len(self.input_points)} points.")
             x_points, y_points = zip(*self.input_points)
             self.points = list(zip(map(float, x_points), map(float, y_points)))
@@ -232,8 +306,11 @@ class Window(QMainWindow):
         self.prepare_points(result["points"])
         self.plot()
         res_distance = round(result["distance"] / 1000, 2)
-        self.gpx_label.setText(
-            f"This is the optimal path through the given points.\nDistance traveled is {res_distance} km. You can find the real path in output/result.gpx.")
+        self.gpx_label.setText((
+                                   "This is the optimal path through the given points.\n"
+                                   "Distance traveled is {res_distance} km."
+                                   "You can find the real path in output/result.gpx.").format(res_distance=res_distance)
+                               )
         self.enable_buttons()
         logger.info("DONE! You can find the result in output/result.gpx.")
 
@@ -292,7 +369,14 @@ class Window(QMainWindow):
             for i in range(0, len(self.a)):
                 label = str(i + 1)
                 x, y = self.a[i], self.b[i]
-                self.ax.annotate(label, xy=(x, y), xytext=(self.a[i] - 0.00025, self.b[i] - 0.0015), color='white')
+                self.ax.annotate(
+                    label,
+                    xy=(x, y),
+                    xytext=(
+                        self.a[i] + self._POINT_NAME_X_OFFSET,
+                        self.b[i] + self._POINT_NAME_Y_OFFSET),
+                    color='white'
+                )
         else:
             self.ax.cla()
             self.ax.set_xlim([min(self.a) - 0.05, max(self.a) + 0.05])
