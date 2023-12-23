@@ -6,6 +6,7 @@ from PyQt5.QtCore import QObject, pyqtSignal
 from typing import Tuple, List, Dict
 
 from src.DistanceAPIClient import DistanceAPIClient
+from src.Method import Method
 
 
 class TSPSolver(QObject):
@@ -16,7 +17,7 @@ class TSPSolver(QObject):
         self.tsp_solver = None
         self.distance_api = DistanceAPIClient(os.getenv("API_KEY"), 'foot-walking')
         self.graph = nx.Graph()
-        self.method = 'brute_force'
+        self.method = Method.BRUTE_FORCE
         self.starting_point = 0
 
     def create_graph(self, points) -> None:
@@ -64,12 +65,12 @@ class TSPSolver(QObject):
 
     def solve_tsp(self) -> Dict:
         match self.method:
-            case 'nearest_neighbour':
-                from src.NearestNeighbourTSPSolver import NearestNeighbourTSPSolver
-                self.tsp_solver = NearestNeighbourTSPSolver(self.starting_point)
-            case 'brute_force':
+            case Method.BRUTE_FORCE:
                 from src.BruteForceTSPSolver import BruteForceTSPSolver
                 self.tsp_solver = BruteForceTSPSolver()
+            case Method.NEAREST_NEIGHBOUR:
+                from src.NearestNeighbourTSPSolver import NearestNeighbourTSPSolver
+                self.tsp_solver = NearestNeighbourTSPSolver(self.starting_point)
             case _:
                 self.solve(tsp_solver=self.tsp_solver)
         return self.tsp_solver.solve(self)
@@ -77,7 +78,7 @@ class TSPSolver(QObject):
     def solve(self, tsp_solver) -> Dict:
         return {'points': [], 'distance': 0}
 
-    def set_method(self, method):
+    def set_method(self, method: Method):
         self.method = method
 
     def set_starting_point(self, starting_point):
