@@ -4,12 +4,13 @@ import re
 import xml.etree.ElementTree as ElementTree
 from os.path import exists as file_exists
 from typing import List, Tuple
+import gpxpy
 
 
 class App:
 
     # noinspection PyMethodMayBeStatic
-    def load_gpx(self, file_name: str) -> List[Tuple[str, str]]:
+    def load_gpx(self, file_name: str) -> List[Tuple[float, float]]:
         """
         Loads the input file and parses the xml. It returns a list of points (a list of tuples).
 
@@ -20,13 +21,12 @@ class App:
             list of the locations from the GPX file
         """
         locations = list()
-        if file_exists(file_name):
-            tree = ElementTree.parse(file_name)
-        else:
-            raise FileNotFoundError(errno.ENOENT, os.strerror(errno.ENOENT), file_name)
-        root = tree.getroot()
-        for child in root:
-            locations.append((child.attrib["lat"], child.attrib["lon"]))
+        with open(file_name, 'r') as gpx_file:
+            gpx = gpxpy.parse(gpx_file)
+
+        # Extract locations from the GPX data
+        for waypoint in gpx.waypoints:
+            locations.append((waypoint.latitude, waypoint.longitude))
         return locations
 
     # noinspection PyMethodMayBeStatic
