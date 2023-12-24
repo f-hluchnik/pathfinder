@@ -1,5 +1,6 @@
 .env
 venv
+venv_api
 __pycache__
 input/*
 !input/.gitkeep
