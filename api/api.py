@@ -2,6 +2,7 @@ from flask import Flask
 from flask import jsonify
 from flask import request
 from utils.FileUtils import parse_gpx_file, read_gpx_points
+from App import App
 
 app = Flask(__name__)
 
@@ -12,7 +13,7 @@ def home():
 
 
 @app.route('/number/<int:number>', methods=['GET', 'POST'])
-def count(number): # TODO: testing endpoint, remove for prod
+def count(number):  # TODO: testing endpoint, remove for prod
     return jsonify({
         "plus 1": number + 1,
         "plus 2": number + 2
@@ -34,6 +35,18 @@ def upload():
 def get_points():
     points = read_gpx_points()
     return points
+
+
+@app.route('/method/<str:method_type>', methods=['POST'])
+def set_method(method_type):
+    method = method_type
+
+
+@app.route('/compute/', methods=['GET'])
+def compute():
+    compute_app = App()
+    result = compute_app.compute()
+    return result
 
 
 if __name__ == '__main__':
