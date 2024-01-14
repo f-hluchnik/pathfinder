@@ -14,14 +14,6 @@ def home():
     return "Pathfinder"
 
 
-@app.route('/test/<int:number>', methods=['GET'])  # TODO: testing endpoint, remove for prod
-def count(number):
-    return jsonify({
-        "plus 1": number + 1,
-        "plus 2": number + 2
-    })
-
-
 @app.route('/points/', methods=['POST'])
 def upload():
     file = request.files.get('file')
