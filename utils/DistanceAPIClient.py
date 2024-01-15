@@ -12,9 +12,9 @@ logger = logging.getLogger('asyncio')
 
 class DistanceAPIClient:
 
-    def __init__(self, api_key, profile) -> None:
-        self.api_key = api_key
+    def __init__(self, api_key: str, profile) -> None:
         self.profile = profile
+        self.api_key = api_key
 
     def get_distance(self, lat1: float, lon1: float, lat2: float, lon2: float) -> int:
         """

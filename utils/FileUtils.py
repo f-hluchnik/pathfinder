@@ -1,3 +1,5 @@
+import logging
+
 import gpxpy
 import json
 
@@ -8,9 +10,10 @@ class FileUtils:
         self.content = ''
 
 
-def parse_gpx_file(file) -> None:
+def parse_gpx_file(file_path: str) -> None:
     locations = list()
-    gpx = gpxpy.parse(file)
+    with open(file_path, 'r') as file:
+        gpx = gpxpy.parse(file)
 
     # Extract locations from the GPX data
     for waypoint in gpx.waypoints:

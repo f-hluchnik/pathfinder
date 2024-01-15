@@ -2,7 +2,6 @@ from utils.Method import Method
 from threading import Thread
 from utils.BruteForceTSPSolver import BruteForceBaseTSPSolver
 from utils.NearestNeighbourTSPSolver import NearestNeighbourTSPSolver
-from utils.BaseTSPSolver import BaseTSPSolver
 from utils.FileUtils import read_gpx_points
 from utils.utils import prepare_resulting_points
 
@@ -14,10 +13,11 @@ logging.basicConfig(level=logging.INFO)
 
 class PathfinderApp:
 
-    def __init__(self):
+    def __init__(self, api_key: str):
         self.method = Method.BRUTE_FORCE
         self.starting_point = 0
         self.tsp_solver = None
+        self.api_key = api_key
         self.set_solver_instance()
         self.input_points = read_gpx_points()
         self.resulting_points = None
@@ -35,11 +35,11 @@ class PathfinderApp:
     def set_solver_instance(self) -> None:
         match self.method:
             case Method.BRUTE_FORCE:
-                self.tsp_solver = BruteForceBaseTSPSolver()
+                self.tsp_solver = BruteForceBaseTSPSolver(self.api_key)
             case Method.NEAREST_NEIGHBOUR:
-                self.tsp_solver = NearestNeighbourTSPSolver()
+                self.tsp_solver = NearestNeighbourTSPSolver(self.api_key)
             case _:
-                self.tsp_solver = BruteForceBaseTSPSolver()
+                self.tsp_solver = BruteForceBaseTSPSolver(self.api_key)
 
     def set_starting_point(self, starting_point: int) -> None:
         self.starting_point = starting_point
@@ -54,6 +54,7 @@ class PathfinderApp:
         if self.tsp_solver.graph.number_of_nodes() == 0:
             self.tsp_solver.create_graph(self.input_points)
         result = self.tsp_solver.solve()
+
         self.prepare_points(result["points"])
         res_distance = round(result["distance"] / 1000, 2)
         self.distance = res_distance

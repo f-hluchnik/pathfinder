@@ -16,9 +16,9 @@ logging.basicConfig(level=logging.INFO)
 
 class BaseTSPSolver(ABC):
 
-    def __init__(self) -> None:
+    def __init__(self, api_key) -> None:
         self.tsp_solver = None
-        self.distance_api = DistanceAPIClient(os.getenv("API_KEY"), 'foot-walking')
+        self.distance_api = DistanceAPIClient(api_key, 'foot-walking')
         self.graph = nx.Graph()
         self.method = Method.BRUTE_FORCE
         self.starting_point = 0

@@ -1,0 +1,32 @@
+version: '3'
+services:
+  web:
+    build:
+      context: .
+      dockerfile: Dockerfile
+    ports:
+      - "5000:5000"
+    depends_on:
+      - redis
+    environment:
+      - REDIS_HOST=redis
+    volumes:
+      - shared-volume:/app/tmp
+
+  celery_worker:
+    build:
+      context: .
+      dockerfile: celery_worker/Dockerfile
+    command: celery -A api.celery worker --loglevel=debug
+    depends_on:
+      - redis
+    environment:
+      - REDIS_HOST=redis
+    volumes:
+      - shared-volume:/app/tmp
+
+  redis:
+    image: "redis:latest"
+
+volumes:
+  shared-volume:
