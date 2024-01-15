@@ -1,24 +1,32 @@
 version: '3'
-
 services:
-  app:
+  web:
     build:
       context: .
+      dockerfile: Dockerfile
     ports:
       - "5000:5000"
     depends_on:
       - redis
     environment:
-      - FLASK_APP=app.py
-      - FLASK_RUN_HOST=0.0.0.0
+      - REDIS_HOST=redis
+    volumes:
+      - shared-volume:/app/tmp
 
-  celery-worker:
+  celery_worker:
     build:
-      context: ./celery_worker
+      context: .
+      dockerfile: celery_worker/Dockerfile
+    command: celery -A api.celery worker --loglevel=debug
     depends_on:
       - redis
+    environment:
+      - REDIS_HOST=redis
+    volumes:
+      - shared-volume:/app/tmp
 
   redis:
     image: "redis:latest"
-    ports:
-      - "6379:6379"
+
+volumes:
+  shared-volume:
